@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Personal Finance Tracker{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-line me-2"></i>Financial Reports</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Income vs Expenses</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-trend-up me-2"></i>Trends</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Summary</h5>
+            </div>
+            <div class="card-body">
+                <div id="summaryContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Fetch and display monthly data
+fetch('/api/monthly_data')
+    .then(response => response.json())
+    .then(data => {
+        const labels = Object.keys(data).sort();
+        const incomeData = labels.map(label => data[label].income || 0);
+        const expenseData = labels.map(label => data[label].expense || 0);
+        
+        // Monthly Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: labels.map(label => {
+                    const [year, month] = label.split('-');
+                    return new Date(year, month - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                }),
+                datasets: [{
+                    label: 'Income',
+                    data: incomeData,
+                    backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Expenses',
+                    data: expenseData,
+                    backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Trends Chart
+        const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+        const netData = labels.map((label, index) => incomeData[index] - expenseData[index]);
+        
+        new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: labels.map(label => {
+                    const [year, month] = label.split('-');
+                    return new Date(year, month - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                }),
+                datasets: [{
+                    label: 'Net Income',
+                    data: netData,
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Summary
+        const totalIncome = incomeData.reduce((a, b) => a + b, 0);
+        const totalExpenses = expenseData.reduce((a, b) => a + b, 0);
+        const netTotal = totalIncome - totalExpenses;
+        const avgMonthlyIncome = totalIncome / labels.length || 0;
+        const avgMonthlyExpenses = totalExpenses / labels.length || 0;
+        
+        document.getElementById('summaryContent').innerHTML = `
+            <div class="row text-center">
+                <div class="col-md-6 mb-3">
+                    <h6>Total Income</h6>
+                    <h4 class="text-success">${totalIncome.toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h6>Total Expenses</h6>
+                    <h4 class="text-danger">${totalExpenses.toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h6>Net Total</h6>
+                    <h4 class="${netTotal >= 0 ? 'text-success' : 'text-danger'}">${netTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h6>Monthly Average</h6>
+                    <h4 class="text-info">${avgMonthlyIncome.toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                    <small class="text-muted">Income</small>
+                </div>
+            </div>
+        `;
+    })
+    .catch(error => {
+        console.error('Error fetching data:', error);
+        document.getElementById('summaryContent').innerHTML = '<p class="text-danger">Error loading data</p>';
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Personal Finance Tracker{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard - {{ current_month }}</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Income</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(total_income) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-arrow-up fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Expenses</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(total_expenses) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-arrow-down fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card {% if balance >= 0 %}bg-primary{% else %}bg-warning{% endif %} text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Net Balance</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(balance) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-balance-scale fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Spending by Category</h5>
+            </div>
+            <div class="card-body">
+                {% if spending_by_category %}
+                    <canvas id="spendingChart" width="400" height="200"></canvas>
+                {% else %}
+                    <p class="text-muted text-center py-4">No expense data available for this month</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Transactions</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                    {% for transaction in recent_transactions %}
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <div>
+                                <strong>{{ transaction.description }}</strong><br>
+                                <small class="text-muted">{{ transaction.category.name }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if transaction.transaction_type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                                </span><br>
+                                <small class="text-muted">{{ transaction.date.strftime('%m/%d') }}</small>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('transactions') }}" class="btn btn-outline-primary btn-sm">View All</a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No transactions yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if spending_by_category %}
+const ctx = document.getElementById('spendingChart').getContext('2d');
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for item in spending_by_category %}'{{ item.name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for item in spending_by_category %}{{ item.total }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [{% for item in spending_by_category %}'{{ item.color }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}
