@@ -35,6 +35,8 @@ Generate detailed reports with charts showing spending trends and financial insi
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/83f10d74-a353-42e2-8369-f5e6f6817014" />
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/d710f872-f1ad-4046-a840-6d41808a1df6" />
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/004acf2e-339e-4ae9-a060-adfecb539384" />
+<img width="596" height="406" alt="image" src="https://github.com/user-attachments/assets/0eb565be-0613-49bc-bdf7-30b71916d81f" />
+
 
 
 
